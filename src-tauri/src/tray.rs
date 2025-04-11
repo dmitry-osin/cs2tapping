@@ -8,39 +8,13 @@ use tauri::{
     AppHandle, Manager,
 };
 
-pub fn make_tray_icon(active: bool) -> Image<'static> {
-    const SIZE: u32 = 32;
-    let mut pixels = vec![0u8; (SIZE * SIZE * 4) as usize];
-    let cx = SIZE as f32 / 2.0;
-    let cy = SIZE as f32 / 2.0;
-    let r = SIZE as f32 / 2.0 - 4.0;
-
-    let (rv, gv, bv): (u8, u8, u8) = if active {
-        (230, 57, 70)
-    } else {
-        (90, 90, 95)
-    };
-
-    for y in 0..SIZE {
-        for x in 0..SIZE {
-            let dx = x as f32 + 0.5 - cx;
-            let dy = y as f32 + 0.5 - cy;
-            if (dx * dx + dy * dy).sqrt() < r {
-                let i = ((y * SIZE + x) * 4) as usize;
-                pixels[i] = rv;
-                pixels[i + 1] = gv;
-                pixels[i + 2] = bv;
-                pixels[i + 3] = 255;
-            }
-        }
-    }
-
-    Image::new_owned(pixels, SIZE, SIZE)
+fn app_icon() -> Image<'static> {
+    Image::from_bytes(include_bytes!("../icons/icon.png"))
+        .expect("failed to load tray icon")
 }
 
 pub fn update_tray(app: &AppHandle, active: bool) {
     if let Some(tray) = app.tray_by_id("ct-tray") {
-        let _ = tray.set_icon(Some(make_tray_icon(active)));
         let tooltip = if active {
             "CS2 Tapping — Active"
         } else {
@@ -67,7 +41,7 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     app.manage(TrayToggleItem(toggle));
 
     TrayIconBuilder::with_id("ct-tray")
-        .icon(make_tray_icon(false))
+        .icon(app_icon())
         .tooltip("CS2 Tapping — Inactive")
         .menu(&menu)
         .on_menu_event(|app, event| handle_menu_event(app, event.id.as_ref()))
